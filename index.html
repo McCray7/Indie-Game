@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>工程师打工人生存模拟器 2.5D</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="layout">
+    <section class="game-panel">
+      <header>
+        <h1>工程师打工人生存模拟器：格子生存版</h1>
+        <p>像《饥荒/缺氧》一样管理资源，在办公室生态里争取可持续地活着。</p>
+      </header>
+
+      <canvas id="game" width="960" height="540" aria-label="game canvas"></canvas>
+
+      <div class="controls">
+        <span>移动：WASD / 方向键</span>
+        <span>交互：E</span>
+        <span>暂停：Space</span>
+      </div>
+    </section>
+
+    <aside class="hud-panel">
+      <section class="hud-grid">
+        <div class="stat-card"><span>Day</span><strong id="day">1</strong></div>
+        <div class="stat-card"><span>时段</span><strong id="phase">早晨</strong></div>
+        <div class="stat-card"><span>项目进度</span><strong id="progress">0%</strong></div>
+        <div class="stat-card"><span>薪资</span><strong id="money">¥1000</strong></div>
+      </section>
+
+      <section id="bars" class="bars"></section>
+
+      <section class="event-box">
+        <h2>系统播报</h2>
+        <p id="event-text">欢迎入职。请先活过第一个冲刺周期。</p>
+        <p id="hint" class="hint">提示：站在设施旁按 E 交互。效率不是透支换来的。</p>
+      </section>
+
+      <section class="facilities">
+        <h2>设施说明</h2>
+        <ul>
+          <li>工位 Desk：推进项目，消耗精力和心态</li>
+          <li>茶水间 Pantry：降低饥饿并恢复少量精力</li>
+          <li>休息区 Lounge：恢复心态与精力，降低倦怠</li>
+          <li>健身角 Gym：提升健康，较慢恢复心态</li>
+          <li>Leader Office：强制冲刺，高收益高代价</li>
+        </ul>
+      </section>
+
+      <section class="log">
+        <h2>日志</h2>
+        <ul id="log-list"></ul>
+      </section>
+    </aside>
+  </main>
+
+  <dialog id="ending-dialog">
+    <h2 id="ending-title"></h2>
+    <p id="ending-text"></p>
+    <button id="restart-btn">重开一局</button>
+  </dialog>
+
+  <script src="script.js"></script>
+</body>
+</html>
