@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>工程师打工人生存模拟器</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="game-shell">
+    <header>
+      <h1>工程师打工人生存模拟器</h1>
+      <p class="tagline">在 KPI 丛林里活下来，找到真正的 Work-Life Balance。</p>
+    </header>
+
+    <section class="hud">
+      <div class="stat"><span>第</span><strong id="day">1</strong><span>天</span></div>
+      <div class="stat"><span>时段</span><strong id="phase">上午</strong></div>
+      <div class="stat"><span>项目进度</span><strong id="progress">0%</strong></div>
+      <div class="stat"><span>存款</span><strong id="money">¥1000</strong></div>
+    </section>
+
+    <section class="bars" id="bars"></section>
+
+    <section class="story">
+      <h2>今日事件</h2>
+      <p id="event-text">入职第一天，Leader 微笑着说："我们是扁平化管理，大家都是兄弟。"</p>
+      <p id="hint" class="hint">提示：平衡精力、健康和情绪，别把自己当成一次性耗材。</p>
+    </section>
+
+    <section class="actions">
+      <h2>选择行动</h2>
+      <div class="action-grid" id="actions"></div>
+    </section>
+
+    <section class="log">
+      <h2>生存日志</h2>
+      <ul id="log-list"></ul>
+    </section>
+  </main>
+
+  <dialog id="ending-dialog">
+    <h2 id="ending-title"></h2>
+    <p id="ending-text"></p>
+    <button id="restart-btn">再来一局</button>
+  </dialog>
+
+  <script src="script.js"></script>
+</body>
+</html>
