@@ -1,156 +1,113 @@
 :root {
   color-scheme: dark;
-  --bg: #0e1117;
-  --panel: #161b22;
-  --panel-soft: #1f2631;
+  --bg: #0b0f16;
+  --panel: #131a24;
+  --panel-soft: #1b2533;
+  --line: #2e3b4f;
   --text: #e6edf3;
   --accent: #7ee787;
-  --warn: #f2cc60;
   --danger: #ff7b72;
+  --warn: #f2cc60;
 }
 
-* {
-  box-sizing: border-box;
-}
-
+* { box-sizing: border-box; }
 body {
   margin: 0;
-  min-height: 100vh;
-  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
-  background: radial-gradient(circle at top, #1d2a42 0%, var(--bg) 55%);
+  background: radial-gradient(circle at top, #1a2d4f 0%, var(--bg) 60%);
   color: var(--text);
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
 }
 
-.game-shell {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 1.2rem;
+.layout {
+  width: min(1400px, 96vw);
+  margin: 1rem auto;
   display: grid;
+  grid-template-columns: 2fr 1fr;
   gap: 1rem;
 }
 
-header,
-.hud,
-.bars,
-.story,
-.actions,
-.log {
+.game-panel,
+.hud-panel {
   background: var(--panel);
-  border: 1px solid #2d3644;
+  border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 0.9rem 1rem;
+  padding: 0.9rem;
 }
 
-h1,
-h2 {
-  margin: 0 0 0.6rem;
+h1,h2 { margin: 0 0 .6rem; }
+header p { margin: 0 0 .7rem; color: #9bb1c9; }
+
+canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid #3d4c61;
+  background: #0e1520;
+  image-rendering: pixelated;
 }
 
-.tagline {
-  margin: 0;
-  color: #9fb0c0;
-}
-
-.hud {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.stat {
+.controls {
+  margin-top: .55rem;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: #9bb1c9;
+  font-size: .92rem;
+}
+
+.hud-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .5rem;
+}
+
+.stat-card {
   background: var(--panel-soft);
   border-radius: 8px;
-  padding: 0.55rem;
+  padding: .5rem;
+  text-align: center;
 }
+.stat-card span { display:block; color:#9bb1c9; font-size:.82rem; }
+.stat-card strong { color: var(--accent); font-size: 1.15rem; }
 
-.stat strong {
-  font-size: 1.2rem;
-  color: var(--accent);
-}
-
-.bar-item {
-  margin-bottom: 0.65rem;
-}
-
-.bar-item:last-child {
-  margin-bottom: 0;
-}
-
-.bar-label {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.25rem;
-  color: #c7d2de;
-  font-size: 0.92rem;
-}
-
-.bar-track {
-  width: 100%;
-  height: 10px;
-  border-radius: 999px;
-  background: #2c3442;
-  overflow: hidden;
-}
-
-.bar-fill {
-  height: 100%;
-  transition: width 0.2s ease;
-}
-
-.hint {
-  color: #8fc8ff;
-}
-
-.action-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
-button {
-  border: none;
+.bars,.event-box,.facilities,.log {
+  margin-top: .75rem;
+  background: var(--panel-soft);
   border-radius: 10px;
-  background: #2b3647;
-  color: var(--text);
-  padding: 0.7rem 0.8rem;
-  font-size: 0.96rem;
-  cursor: pointer;
+  padding: .65rem;
 }
 
-button:hover {
-  background: #394b63;
+.bar-item { margin-bottom: .56rem; }
+.bar-item:last-child { margin-bottom: 0; }
+.bar-label {
+  display:flex;
+  justify-content:space-between;
+  font-size:.88rem;
+  color:#c2d1e0;
+  margin-bottom:.2rem;
 }
+.bar-track { height:10px; background:#2a3747; border-radius:999px; overflow:hidden; }
+.bar-fill { height:100%; transition: width .2s ease; }
 
-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.log ul,
-#log-list {
-  margin: 0;
-  padding-left: 1rem;
-}
-
-#log-list {
-  max-height: 180px;
-  overflow-y: auto;
-}
+.hint { color: #8fc8ff; }
+ul { margin:0; padding-left: 1rem; }
+#log-list { max-height: 160px; overflow-y: auto; }
 
 #ending-dialog {
   border: 1px solid #3b4558;
   border-radius: 12px;
-  background: #131922;
+  background: #101722;
   color: var(--text);
   max-width: 480px;
 }
+button {
+  border: none;
+  border-radius: 8px;
+  background: #2c3d53;
+  color: var(--text);
+  padding: .6rem .85rem;
+}
 
-@media (max-width: 760px) {
-  .hud,
-  .action-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: 1fr; }
 }

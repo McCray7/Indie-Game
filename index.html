@@ -3,46 +3,64 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>工程师打工人生存模拟器</title>
+  <title>工程师打工人生存模拟器 2.5D</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="game-shell">
-    <header>
-      <h1>工程师打工人生存模拟器</h1>
-      <p class="tagline">在 KPI 丛林里活下来，找到真正的 Work-Life Balance。</p>
-    </header>
+  <main class="layout">
+    <section class="game-panel">
+      <header>
+        <h1>工程师打工人生存模拟器：格子生存版</h1>
+        <p>像《饥荒/缺氧》一样管理资源，在办公室生态里争取可持续地活着。</p>
+      </header>
 
-    <section class="hud">
-      <div class="stat"><span>第</span><strong id="day">1</strong><span>天</span></div>
-      <div class="stat"><span>时段</span><strong id="phase">上午</strong></div>
-      <div class="stat"><span>项目进度</span><strong id="progress">0%</strong></div>
-      <div class="stat"><span>存款</span><strong id="money">¥1000</strong></div>
+      <canvas id="game" width="960" height="540" aria-label="game canvas"></canvas>
+
+      <div class="controls">
+        <span>移动：WASD / 方向键</span>
+        <span>交互：E</span>
+        <span>暂停：Space</span>
+      </div>
     </section>
 
-    <section class="bars" id="bars"></section>
+    <aside class="hud-panel">
+      <section class="hud-grid">
+        <div class="stat-card"><span>Day</span><strong id="day">1</strong></div>
+        <div class="stat-card"><span>时段</span><strong id="phase">早晨</strong></div>
+        <div class="stat-card"><span>项目进度</span><strong id="progress">0%</strong></div>
+        <div class="stat-card"><span>薪资</span><strong id="money">¥1000</strong></div>
+      </section>
 
-    <section class="story">
-      <h2>今日事件</h2>
-      <p id="event-text">入职第一天，Leader 微笑着说："我们是扁平化管理，大家都是兄弟。"</p>
-      <p id="hint" class="hint">提示：平衡精力、健康和情绪，别把自己当成一次性耗材。</p>
-    </section>
+      <section id="bars" class="bars"></section>
 
-    <section class="actions">
-      <h2>选择行动</h2>
-      <div class="action-grid" id="actions"></div>
-    </section>
+      <section class="event-box">
+        <h2>系统播报</h2>
+        <p id="event-text">欢迎入职。请先活过第一个冲刺周期。</p>
+        <p id="hint" class="hint">提示：站在设施旁按 E 交互。效率不是透支换来的。</p>
+      </section>
 
-    <section class="log">
-      <h2>生存日志</h2>
-      <ul id="log-list"></ul>
-    </section>
+      <section class="facilities">
+        <h2>设施说明</h2>
+        <ul>
+          <li>工位 Desk：推进项目，消耗精力和心态</li>
+          <li>茶水间 Pantry：降低饥饿并恢复少量精力</li>
+          <li>休息区 Lounge：恢复心态与精力，降低倦怠</li>
+          <li>健身角 Gym：提升健康，较慢恢复心态</li>
+          <li>Leader Office：强制冲刺，高收益高代价</li>
+        </ul>
+      </section>
+
+      <section class="log">
+        <h2>日志</h2>
+        <ul id="log-list"></ul>
+      </section>
+    </aside>
   </main>
 
   <dialog id="ending-dialog">
     <h2 id="ending-title"></h2>
     <p id="ending-text"></p>
-    <button id="restart-btn">再来一局</button>
+    <button id="restart-btn">重开一局</button>
   </dialog>
 
   <script src="script.js"></script>

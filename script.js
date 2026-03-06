@@ -1,5 +1,7 @@
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
 const barsContainer = document.getElementById('bars');
-const actionsContainer = document.getElementById('actions');
 const eventText = document.getElementById('event-text');
 const hintText = document.getElementById('hint');
 const dayEl = document.getElementById('day');
@@ -12,7 +14,12 @@ const endingTitle = document.getElementById('ending-title');
 const endingText = document.getElementById('ending-text');
 const restartBtn = document.getElementById('restart-btn');
 
-const STAT_META = [
+const TILE = 48;
+const COLS = 20;
+const ROWS = 11;
+const PHASES = ['早晨', '下午', '深夜'];
+
+const statsMeta = [
   { key: 'energy', label: '精力', color: '#7ee787' },
   { key: 'health', label: '健康', color: '#79c0ff' },
   { key: 'morale', label: '心态', color: '#d2a8ff' },
@@ -20,158 +27,76 @@ const STAT_META = [
   { key: 'hunger', label: '饥饿', color: '#f2cc60', inverse: true },
 ];
 
-const ACTIONS = [
+const facilities = [
   {
-    name: '认真开发',
-    desc: '稳步推进项目。',
-    effect: (s) => ({
-      progress: 12,
-      energy: -16,
-      hunger: 10,
-      morale: -5,
-      money: 200,
-      burnout: 8,
-      log: '你完成了两个需求，PM 说“非常好，下周再冲一把”。',
-    }),
+    id: 'desk', name: 'Desk', x: 4, y: 3, color: '#5f8cff',
+    action: () => ({ progress: 8, energy: -10, morale: -4, hunger: 6, money: 120, burnout: 6, health: -2, log: '你在工位专注产出，需求又悄悄增加了。' }),
   },
   {
-    name: '被迫加班',
-    desc: '短期冲刺，长期爆炸。',
-    effect: (s) => ({
-      progress: 22,
-      energy: -28,
-      health: -12,
-      hunger: 16,
-      morale: -10,
-      money: 380,
-      burnout: 18,
-      log: '你在 23:40 提交了代码，群里回复：收到。',
-    }),
+    id: 'pantry', name: 'Pantry', x: 15, y: 2, color: '#f2cc60',
+    action: () => ({ hunger: -22, energy: 8, morale: 4, money: -35, burnout: -4, log: '你吃了口热饭，觉得自己重新像个人。' }),
   },
   {
-    name: '正常吃饭',
-    desc: '人是铁，饭是钢。',
-    effect: () => ({
-      hunger: -28,
-      energy: 12,
-      health: 6,
-      morale: 5,
-      money: -45,
-      burnout: -6,
-      log: '你认真吃了一顿饭，意识到自己不是 CI/CD 的一部分。',
-    }),
+    id: 'lounge', name: 'Lounge', x: 6, y: 8, color: '#7ee787',
+    action: () => ({ energy: 14, morale: 12, burnout: -10, progress: -1, hunger: 5, log: '你在休息区放空，思路反而更清晰。' }),
   },
   {
-    name: '早睡休息',
-    desc: '给身体和大脑回血。',
-    effect: () => ({
-      energy: 24,
-      health: 10,
-      morale: 10,
-      burnout: -12,
-      hunger: 8,
-      progress: -2,
-      log: '你按时休息，明天写代码像开了自动补全。',
-    }),
+    id: 'gym', name: 'Gym', x: 14, y: 8, color: '#79c0ff',
+    action: () => ({ health: 12, morale: 5, energy: -6, burnout: -8, hunger: 8, money: -20, log: '运动 20 分钟，你把焦虑从身体里排出去一点。' }),
   },
   {
-    name: '和朋友见面',
-    desc: '重新感受生活。',
-    effect: () => ({
-      morale: 18,
-      burnout: -14,
-      energy: -8,
-      hunger: 6,
-      money: -80,
-      log: '朋友提醒你：工作是生活的一部分，不是全部。',
-    }),
-  },
-  {
-    name: '摸鱼学习',
-    desc: '悄悄提升自己。',
-    effect: () => ({
-      progress: 8,
-      morale: 8,
-      energy: -10,
-      burnout: -4,
-      money: 120,
-      log: '你学了新技术，开始思考怎样更高效而不是更长工时。',
-    }),
+    id: 'boss', name: 'Leader Office', x: 10, y: 5, color: '#ff7b72',
+    action: () => ({ progress: 18, money: 260, energy: -22, morale: -12, burnout: 16, health: -8, hunger: 10, log: 'Leader 说“再冲一下”，你交付了，但笑容消失了。' }),
   },
 ];
 
-const PHASES = ['上午', '下午', '夜晚'];
-
+const keys = new Set();
 let state;
+let paused = false;
+let gameOver = false;
+let lastTs = 0;
+let accum = 0;
 
-function clamp(value, min = 0, max = 100) {
-  return Math.max(min, Math.min(max, value));
+function clamp(v, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, v));
 }
 
 function init() {
   state = {
     day: 1,
-    phaseIndex: 0,
+    phase: 0,
     progress: 0,
     money: 1000,
     energy: 72,
     health: 75,
-    morale: 70,
-    burnout: 18,
-    hunger: 15,
-    logs: ['你租了一个离公司 40 分钟地铁的单间，准备开始这段职场生存挑战。'],
-    gameOver: false,
+    morale: 68,
+    burnout: 20,
+    hunger: 20,
+    player: { x: 2.5, y: 2.5, speed: 4.2 },
+    logs: ['你入职了一家“奋斗者优先”公司，先活下来再说。'],
+    worldTick: 0,
   };
-
-  drawActions();
-  render();
+  gameOver = false;
+  paused = false;
+  renderHud();
+  draw();
 }
 
-function drawActions() {
-  actionsContainer.innerHTML = '';
-  ACTIONS.forEach((action, index) => {
-    const btn = document.createElement('button');
-    btn.innerHTML = `<strong>${action.name}</strong><br/><small>${action.desc}</small>`;
-    btn.addEventListener('click', () => takeAction(index));
-    actionsContainer.appendChild(btn);
-  });
-}
-
-function randomOfficeEvent() {
+function randomEvent() {
   const events = [
-    {
-      text: 'Leader 发来一句“简单优化一下就行”，你看到需求文档新增了 3 页。',
-      effect: { morale: -6, burnout: 7 },
-    },
-    {
-      text: '你推动了自动化脚本，团队节省了重复劳动时间。',
-      effect: { morale: 8, burnout: -6, progress: 4 },
-    },
-    {
-      text: '同事帮你顶了一次线上问题，你感受到互相支持。',
-      effect: { morale: 6, burnout: -4 },
-    },
-    {
-      text: '半夜报警把你吵醒，第二天像丧尸一样开会。',
-      effect: { energy: -10, health: -6, burnout: 8 },
-    },
-    {
-      text: '你拒绝了无意义周末加班，反而更高效完成任务。',
-      effect: { morale: 10, burnout: -8, progress: 5 },
-    },
+    { text: '需求评审临时改口，返工 +1。', effect: { morale: -5, burnout: 5 } },
+    { text: '同事分享自动化脚本，重复劳动下降。', effect: { morale: 6, burnout: -6, progress: 4 } },
+    { text: '半夜报警，睡眠被切碎。', effect: { energy: -10, health: -6, burnout: 8 } },
+    { text: '你明确拒绝无意义加班，白天效率反而更高。', effect: { morale: 8, burnout: -7, progress: 3 } },
   ];
   return events[Math.floor(Math.random() * events.length)];
 }
 
 function applyEffect(effect) {
-  const keys = ['progress', 'money', 'energy', 'health', 'morale', 'burnout', 'hunger'];
-  keys.forEach((key) => {
-    if (effect[key]) {
-      state[key] += effect[key];
-    }
+  ['progress', 'money', 'energy', 'health', 'morale', 'burnout', 'hunger'].forEach((k) => {
+    if (effect[k]) state[k] += effect[k];
   });
-
-  state.progress = clamp(state.progress, 0, 100);
+  state.progress = clamp(state.progress);
   state.energy = clamp(state.energy);
   state.health = clamp(state.health);
   state.morale = clamp(state.morale);
@@ -179,137 +104,199 @@ function applyEffect(effect) {
   state.hunger = clamp(state.hunger);
 }
 
-function advanceTime() {
-  state.phaseIndex += 1;
-  if (state.phaseIndex > 2) {
-    state.phaseIndex = 0;
+function doInteraction() {
+  if (gameOver) return;
+  const nearest = facilities.find((f) => Math.hypot(state.player.x - (f.x + 0.5), state.player.y - (f.y + 0.5)) < 1.35);
+  if (!nearest) {
+    eventText.textContent = '附近没有可交互设施。靠近彩色建筑后按 E。';
+    return;
+  }
+
+  const effect = nearest.action();
+  applyEffect(effect);
+  pushLog(`[Day ${state.day} ${PHASES[state.phase]}] ${effect.log}`);
+
+  const ev = randomEvent();
+  applyEffect(ev.effect);
+  eventText.textContent = `${nearest.name} -> ${ev.text}`;
+  advancePhase();
+  checkEnding();
+  renderHud();
+}
+
+function pushLog(text) {
+  state.logs.unshift(text);
+  state.logs = state.logs.slice(0, 12);
+}
+
+function advancePhase() {
+  state.phase += 1;
+  if (state.phase > 2) {
+    state.phase = 0;
     state.day += 1;
-    state.hunger = clamp(state.hunger + 6);
+    state.hunger = clamp(state.hunger + 8);
     state.burnout = clamp(state.burnout + 4);
   }
 }
 
-function evaluateStatus() {
-  if (state.health <= 0 || state.energy <= 0) {
-    return {
-      title: '身体发出红色警报',
-      text: '你终于撑不住了。你意识到：长期透支无法换来真正的成长。',
-    };
+function worldDecay(dt) {
+  accum += dt;
+  if (accum < 1) return;
+  accum = 0;
+  state.worldTick += 1;
+  state.hunger = clamp(state.hunger + 1);
+  state.energy = clamp(state.energy - 0.8);
+  state.morale = clamp(state.morale - (state.burnout > 70 ? 1.2 : 0.4));
+  if (state.hunger > 75) state.health = clamp(state.health - 1.1);
+  if (state.hunger > 85) state.energy = clamp(state.energy - 1.3);
+  if (state.worldTick % 18 === 0) {
+    state.burnout = clamp(state.burnout + 1.2);
   }
-
-  if (state.burnout >= 100 || state.morale <= 0) {
-    return {
-      title: '心理防线崩溃',
-      text: '你完成了很多任务，却丢失了热情。该重新定义“成功”了。',
-    };
-  }
-
-  if (state.day > 14) {
-    if (state.progress >= 85 && state.health >= 55 && state.burnout <= 55) {
-      return {
-        title: '平衡结局：可持续的优秀',
-        text: '你交付了项目，也守住了生活边界。你证明了高质量不等于无限加班。',
-      };
-    }
-    if (state.progress >= 85) {
-      return {
-        title: '单一胜利结局',
-        text: '项目上线了，但你像被榨干的电池。真正的终点不是 KPI，而是长期主义。',
-      };
-    }
-    return {
-      title: '迷失结局',
-      text: '你既没活成自己，也没完成目标。也许是时候改变系统而非苛责自己。',
-    };
-  }
-
-  return null;
+  checkEnding();
+  renderHud();
 }
 
-function takeAction(actionIndex) {
-  if (state.gameOver) {
-    return;
+function checkEnding() {
+  if (gameOver) return;
+  let ending = null;
+  if (state.health <= 0 || state.energy <= 0) {
+    ending = ['身体透支结局', '你扛过了每个截止日期，却没扛过自己的身体。'];
+  } else if (state.morale <= 0 || state.burnout >= 100) {
+    ending = ['心理崩溃结局', '工作完成了，热爱却耗尽了。是时候重建边界。'];
+  } else if (state.day > 16) {
+    if (state.progress >= 88 && state.health >= 55 && state.burnout <= 55) {
+      ending = ['平衡结局', '你用可持续节奏完成交付：高质量 ≠ 无穷加班。'];
+    } else if (state.progress >= 88) {
+      ending = ['燃尽式胜利', '项目上线了，但你像没电的 UPS。'];
+    } else {
+      ending = ['迷失结局', '你在系统里消耗太久，忘了自己要去哪里。'];
+    }
   }
-
-  const action = ACTIONS[actionIndex];
-  const effect = action.effect(state);
-  applyEffect(effect);
-  state.logs.unshift(`[Day ${state.day} ${PHASES[state.phaseIndex]}] ${effect.log}`);
-
-  const event = randomOfficeEvent();
-  applyEffect(event.effect);
-  eventText.textContent = event.text;
-
-  advanceTime();
-  const ending = evaluateStatus();
 
   if (ending) {
-    state.gameOver = true;
-    endingTitle.textContent = ending.title;
-    endingText.textContent = ending.text;
+    gameOver = true;
+    endingTitle.textContent = ending[0];
+    endingText.textContent = ending[1];
     endingDialog.showModal();
   }
-
-  render();
 }
 
 function getHint() {
-  if (state.burnout > 70) {
-    return '倦怠偏高：短期高产可能在偷走你的长期能力。';
-  }
-  if (state.hunger > 70) {
-    return '你已经很饿了：按时吃饭是最便宜的续航策略。';
-  }
-  if (state.morale < 35) {
-    return '心态偏低：试着社交或休息，别把痛苦合理化。';
-  }
-  if (state.progress < 45 && state.day > 8) {
-    return '进度偏慢：用专注开发或学习提升效率，而不是盲目拉时长。';
-  }
-  return '你在和系统博弈：把自己当“人”，而不是可替换资源。';
+  if (state.burnout > 70) return '倦怠很高：去 Lounge/Gym 先恢复，再追进度。';
+  if (state.hunger > 70) return '你很饿：Pantry 的收益通常高于硬撑。';
+  if (state.progress < 50 && state.day > 9) return '中后期了：Desk 与 Leader Office 要合理混用。';
+  return '找“稳定节奏”：输出、吃饭、休息、社交循环才可持续。';
 }
 
-function renderBars() {
+function renderHud() {
+  dayEl.textContent = String(state.day);
+  phaseEl.textContent = PHASES[state.phase];
+  progressEl.textContent = `${Math.round(state.progress)}%`;
+  moneyEl.textContent = `¥${Math.round(state.money)}`;
+  hintText.textContent = `提示：${getHint()}`;
+
   barsContainer.innerHTML = '';
-  STAT_META.forEach(({ key, label, color, inverse }) => {
-    const value = state[key];
-    const percent = inverse ? 100 - value : value;
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'bar-item';
-    wrapper.innerHTML = `
+  statsMeta.forEach(({ key, label, color, inverse }) => {
+    const value = Math.round(state[key]);
+    const width = inverse ? 100 - value : value;
+    const item = document.createElement('div');
+    item.className = 'bar-item';
+    item.innerHTML = `
       <div class="bar-label"><span>${label}</span><span>${value}</span></div>
-      <div class="bar-track">
-        <div class="bar-fill" style="width:${percent}%;background:${color};"></div>
-      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${width}%;background:${color}"></div></div>
     `;
-    barsContainer.appendChild(wrapper);
+    barsContainer.appendChild(item);
   });
-}
 
-function renderLogs() {
   logList.innerHTML = '';
-  state.logs.slice(0, 8).forEach((item) => {
+  state.logs.forEach((l) => {
     const li = document.createElement('li');
-    li.textContent = item;
+    li.textContent = l;
     logList.appendChild(li);
   });
 }
 
-function render() {
-  dayEl.textContent = String(state.day);
-  phaseEl.textContent = PHASES[state.phaseIndex];
-  progressEl.textContent = `${state.progress}%`;
-  moneyEl.textContent = `¥${state.money}`;
-  hintText.textContent = `提示：${getHint()}`;
-
-  renderBars();
-  renderLogs();
-
-  Array.from(actionsContainer.querySelectorAll('button')).forEach((btn) => {
-    btn.disabled = state.gameOver;
-  });
+function drawTile(x, y, color) {
+  const isoX = x * TILE + (y % 2) * 2;
+  const isoY = y * TILE;
+  ctx.fillStyle = color;
+  ctx.fillRect(isoX, isoY, TILE - 2, TILE - 2);
 }
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let y = 0; y < ROWS; y += 1) {
+    for (let x = 0; x < COLS; x += 1) {
+      const checker = (x + y) % 2 === 0 ? '#142233' : '#16283d';
+      drawTile(x, y, checker);
+    }
+  }
+
+  facilities.forEach((f) => {
+    drawTile(f.x, f.y, f.color);
+    ctx.fillStyle = '#0b0f16';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(f.name, f.x * TILE + 3, f.y * TILE + 18);
+  });
+
+  const px = state.player.x * TILE;
+  const py = state.player.y * TILE;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(px, py, 13, 0, Math.PI * 2);
+  ctx.fill();
+
+  const near = facilities.find((f) => Math.hypot(state.player.x - (f.x + 0.5), state.player.y - (f.y + 0.5)) < 1.35);
+  if (near && !gameOver) {
+    ctx.fillStyle = '#7ee787';
+    ctx.font = '16px sans-serif';
+    ctx.fillText(`按 E 与 ${near.name} 交互`, 20, canvas.height - 18);
+  }
+
+  if (paused && !gameOver) {
+    ctx.fillStyle = 'rgba(0,0,0,.5)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#fff';
+    ctx.font = '28px sans-serif';
+    ctx.fillText('已暂停', canvas.width / 2 - 50, canvas.height / 2);
+  }
+}
+
+function update(dt) {
+  if (paused || gameOver) return;
+
+  let dx = 0;
+  let dy = 0;
+  if (keys.has('arrowup') || keys.has('w')) dy -= 1;
+  if (keys.has('arrowdown') || keys.has('s')) dy += 1;
+  if (keys.has('arrowleft') || keys.has('a')) dx -= 1;
+  if (keys.has('arrowright') || keys.has('d')) dx += 1;
+
+  const length = Math.hypot(dx, dy) || 1;
+  const speed = state.player.speed * dt;
+  state.player.x = Math.max(0.4, Math.min(COLS - 0.5, state.player.x + (dx / length) * speed));
+  state.player.y = Math.max(0.4, Math.min(ROWS - 0.5, state.player.y + (dy / length) * speed));
+
+  worldDecay(dt);
+}
+
+function loop(ts) {
+  const dt = Math.min(0.033, (ts - lastTs) / 1000 || 0);
+  lastTs = ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown', (e) => {
+  const key = e.key.toLowerCase();
+  keys.add(key);
+  if (key === 'e') doInteraction();
+  if (key === ' ' || key === 'spacebar') paused = !paused;
+});
+
+document.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
 
 restartBtn.addEventListener('click', () => {
   endingDialog.close();
@@ -317,3 +304,4 @@ restartBtn.addEventListener('click', () => {
 });
 
 init();
+requestAnimationFrame(loop);
